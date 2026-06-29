@@ -1,5 +1,6 @@
 from fastapi import APIRouter, FastAPI
-from api.user_mgt.user_view import user_router
+from api.system_mgt.user_view import user_router
+
 
 
 def route_v1():

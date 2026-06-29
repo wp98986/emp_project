@@ -1,3 +1,4 @@
 /.vscode
 /frontend
 /__pycache__
+/fastapi-emp
