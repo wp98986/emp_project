@@ -42,7 +42,7 @@ async def db_session_middleware(
         log.error(e)  # 记录错误日志
         return response_err
     finally:
-        # 关闭session会话
+        # 关闭session会话，归还连接到连接池
         request.state.session.close()
     return response
 
@@ -92,6 +92,7 @@ async def verify_token(request: Request, call_next: Callable[[Request]]) -> Resp
     else:
         # print("================未命中白名单url，校验token================")
         authorization: str = request.headers.get("Authorization", "")
+        print("authorization:", authorization)
         if not authorization:
             # 中间件校验token失败，不能直接返回HTTPException ❌️
             # raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未授权")
@@ -101,11 +102,15 @@ async def verify_token(request: Request, call_next: Callable[[Request]]) -> Resp
             # 解析token，获取用户信息，将用户信息注入到请求状态中state中
             payload = jwt.decode(auth_token, JWT_SECRET_KEY, algorithms=[ALGORITHM])
             print("解析token成功:", payload)
-            sub, user_name = payload.get("sub"), payload.get("user_name")
+            sub, user_name = payload.get("sub"), payload.get("username")
             # 校验token合法性
+            print("sub:", sub)
+            print("user_name:", user_name)
+
             if not sub:  # sub 是用户id
                 return auth_error
-            request.state.user = {"user_id": sub, "user_name": user_name}
+            request.state.username = user_name
+            request.state.userid = sub
             return await call_next(
                 request
             )  # 继续向下执行，调用下一个中间件或路由处理函数
@@ -115,6 +120,7 @@ async def verify_token(request: Request, call_next: Callable[[Request]]) -> Resp
             return auth_expired
         except Exception as e:
             log.error(e)  # 记录错误日志
+            print("校验token失败:", e)
             return auth_error
 
 

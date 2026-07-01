@@ -1,12 +1,10 @@
 # 创建字路由
-from typing import Generic, TypeVar
-
-from fastapi import APIRouter, Depends, HTTPException, Path, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, Field
-from sqlalchemy import select
+from fastapi_pagination.ext.sqlalchemy import paginate
 from sqlalchemy.orm import Session
-
+from fastapi_pagination import Page
+from api.system_mgt import ApiResponse
 from api.system_mgt.user_schemas import (
     CreateUserSchema,
     LoginUserRequestSchema,
@@ -14,24 +12,15 @@ from api.system_mgt.user_schemas import (
     UpdateUserSchema,
     UserBaseSchema,
     UserSchema,
+    UserSearchQuery,
 )
-from db.system_mgt.user_models import UserModel
+
 from utils.dependencis import get_db
 from db.system_mgt.user_dao import UserDao
 from utils.jwt_utils import create_access_token
 from utils.password_hash import get_password_hash, verify_password
 
-T = TypeVar("T")
-
-
-# 定义响应模型
-class ApiResponse(BaseModel, Generic[T]):
-    code: int = Field(..., description="状态码")
-    msg: str = Field(..., description="状态信息")
-    data: T | None = None
-
-
-user_router = APIRouter(prefix="/user")
+router = APIRouter(prefix="/user")
 
 # 创建dao类
 _dao = UserDao()
@@ -42,7 +31,7 @@ log = logging.getLogger("user_view")
 
 
 # 获取所有用户
-@user_router.get(
+@router.get(
     "/get_all",
     summary="获取所有用户",
     description="获取所有用户信息",
@@ -55,34 +44,35 @@ def get_user_list(session: Session = Depends(get_db)):
 
 
 # 分页查询用户列表
-@user_router.get(
+@router.get(
     "/get_by_page",
     summary="分页查询用户列表",
     description="分页查询用户列表",
-)
+    response_model=Page[UserSchema]
+) # fastapi-pagination 装饰器：自动将 Query 对象转为分页响应
 def get_user_list_by_page(
     session: Session = Depends(get_db),
-    page: int = 1,
-    page_size: int = 10,
+    id: int | None = Query(default=None, description="用户ID"),
+    username: str | None = Query(default=None, description="用户名"),
+    real_name: str | None = Query(default=None, description="真实姓名"),
+    query_dept_id: int | None = Query(default=None, description="部门ID"),
+    query_phone: str | None = Query(default=None, description="手机号"),
 ):
     """分页查询用户列表"""
-    user_list = _dao.get_by_page(session, page, page_size)
-    total = _dao.count(session)
-    # return {"message": "分页查询用户列表", "data": user_list}
-    return {
-        "code": 200,
-        "msg": "分页查询员工成功",
-        "data": {
-            "page": page,
-            "page_size": page_size,
-            "total": total,
-            "models": user_list,
-        },
-    }
+    query = UserSearchQuery(
+        id=id,
+        username=username,
+        real_name=real_name,
+        dept_id=query_dept_id,
+        phone=query_phone,
+    )
+    # 分页查询
+    result = paginate(_dao.search_user_query(session, query))
+    return result
 
 
 # 根据ID查询用户
-@user_router.get(
+@router.get(
     "/get_by_id/{pk}",
     summary="根据ID查询用户",
     description="根据用户ID查询用户信息",
@@ -102,7 +92,7 @@ def get_user_by_id(
 
 
 # 注册用户
-@user_router.post(
+@router.post(
     "/register",
     summary="注册用户",
     description="注册用户信息",
@@ -126,7 +116,7 @@ def create_user(
 
 
 # 用户登录
-@user_router.post(
+@router.post(
     "/login",
     summary="用户登录",
     description="用户登录",
@@ -139,7 +129,7 @@ def login_user(
     """用户登录"""
     # 用户名是否存在
     result = _dao.get_by_username(session, user.username)
-    log.info(result)
+    log.info("23333, result:", result)
     if result is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="用户名不存在"
@@ -167,7 +157,7 @@ def login_user(
 
 
 # 更新用户
-@user_router.put(
+@router.post(
     "/update",
     summary="更新用户",
     description="更新用户信息",
@@ -178,28 +168,29 @@ def update_user(
     session: Session = Depends(get_db),
 ):
     """更新用户"""
-    obj = _dao.update(session, user)
+    print("user开始更新:", user)
+    obj = _dao.update(session, user.id, user)
     return {"code": 200, "msg": "更新用户成功", "data": obj}
 
 
 # 删除用户
-@user_router.delete(
-    "/delete/{pk}",
+@router.post(
+    "/delete",
     summary="删除用户",
     description="根据用户ID删除用户信息",
     response_model=ApiResponse[None],
 )
 def delete_user(
-    pk: int = Path(..., description="用户ID"),
+    obj_in: UserSchema,
     session: Session = Depends(get_db),
 ):
     """删除用户"""
-    _dao.delete(session, pk)
+    _dao.delete(session, obj_in.id)
     return {"code": 200, "msg": "删除用户成功", "data": None}
 
 
 # 这个接口是给接口文档用的，测试接口时需要登录获取token，登录口测试接口时自动携带token
-@user_router.post("/auth/", description="接口文档中认证表单提交")
+@router.post("/auth/", description="接口文档中认证表单提交")
 def auth(
     form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_db)
 ):

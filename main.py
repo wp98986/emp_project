@@ -1,4 +1,5 @@
 from fastapi import Depends, FastAPI
+from fastapi_pagination import add_pagination
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 
@@ -33,6 +34,7 @@ class Server:
         middleware.init_middleware(self.app)  # 初始化中间件
         cors.init_cors(self.app)  # 初始化CORS
         routes.init_routes(self.app)  # 初始化路由
+        add_pagination(self.app)  # 注册分页
 
     # def run(self):
     #     """运行服务器"""

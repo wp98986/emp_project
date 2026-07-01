@@ -9,7 +9,6 @@ from sqlalchemy.orm import (
     Mapped,
     declared_attr,
     mapped_column,
-    scoped_session,
     sessionmaker,
 )
 
@@ -36,24 +35,12 @@ engine = create_engine(
 )
 
 
-# 创建会话工厂
-sm = sessionmaker(
-    bind=engine,  # 绑定数据库引擎
-    autoflush=True,  # 自动刷新会话中的所有对象
-    autocommit=False,  # 禁用自动提交事务
+# 创建会话工厂（每个请求在中间件中创建独立session）
+SessionFactory = sessionmaker(
+    bind=engine,
+    autoflush=True,
+    autocommit=False,
 )
-"""
-我们在初始化 web 应用时通过scoped_session函数对原始的Session工厂进行处理，
-返回出一个ScopedSession工厂，
-在每个请求来的时候就可以通过这个工厂获得一个 scoped_session 对象。
-
-有个中心化的 registry 来保存已经创建的 session，并在你调用ScopedSession工厂的时候，
-在 registry 里面找找是不是之前已经为你创建过 session 了;
--- 如果有，就直接把这个 session 返回给你，
--- 如果没有，就创建一个新的 session，并注册到 registry 中以便你下次来要的时候给你。
-"""
-
-SessionFactory = scoped_session(sm)
 
 
 # 定义数据库模型类的父类

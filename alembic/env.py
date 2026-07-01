@@ -21,7 +21,7 @@ if config.config_file_name is not None:
 # target_metadata = None
 
 from db import DBModelBase
-from db.system_mgt.user_models import UserModel
+from db.system_mgt.models import UserModel, DeptModel
 
 target_metadata = [DBModelBase.metadata]
 
