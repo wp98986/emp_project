@@ -2,3 +2,6 @@
 /frontend
 /__pycache__
 /fastapi-emp
+__pycache__/
+*.pyc
+*.pyo

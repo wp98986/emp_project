@@ -47,7 +47,7 @@ async def db_session_middleware(
     return response
 
 
-async def verify_token(request: Request, call_next: Callable[[Request]]) -> Response:
+async def verify_token(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     """
     验证token
     """

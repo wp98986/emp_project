@@ -4,7 +4,7 @@ PORT: 8000
 ORIGINS:
   ["http://localhost:8080", "http://127.0.0.1:8080", "http://192.168.0.65:8080"]
 DATABASE:
-  DRIVER: mysql # 数据库驱动
+  DRIVER: mysql+pymysql # 数据库驱动
   NAME: test_emp_db # 数据库名称
   HOST: 127.0.0.1
   PORT: 3306

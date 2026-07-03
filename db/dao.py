@@ -1,11 +1,18 @@
 from typing import Generic, Type
 from fastapi import HTTPException
+from pydantic import BaseModel
 from sqlalchemy import CursorResult, delete, func, select, update
 from sqlalchemy.orm import Session
-from api.schemas import CreateSchema, ModelType, UpdateSchema
+# from api.schemas import CreateSchema, ModelType, UpdateSchema
+from db import DBModelBase
 
 
-class BaseDao(Generic[ModelType, CreateSchema, UpdateSchema]):
+# class BaseDao(Generic[ModelType, CreateSchema, UpdateSchema]): # 旧的写法，在py3.12+中可以使用新的语法使用泛型
+class BaseDao[
+    ModelType: DBModelBase,
+    CreateSchema: BaseModel,
+    UpdateSchema: BaseModel,
+]:
     """
     基础数据访问层基类
     所有模型共有的基础数据访问方法，增删改查等

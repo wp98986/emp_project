@@ -1,13 +1,13 @@
-from typing import TypeVar
+# from typing import TypeVar
 
 from pydantic import BaseModel, Field
 
-from db import DBModelBase
+# from db import DBModelBase
 
-# 定义泛型
-ModelType = TypeVar("ModelType", bound=DBModelBase)  # 数据模型类型
-CreateSchema = TypeVar("CreateSchema", bound=BaseModel)  # 创建Schema类型
-UpdateSchema = TypeVar("UpdateSchema", bound=BaseModel)  # 更新Schema类型
+# 定义泛型   旧的写法，在py3.12+中可以使用新的语法定义泛型
+# ModelType = TypeVar("ModelType", bound=DBModelBase)  # 数据模型类型
+# CreateSchema = TypeVar("CreateSchema", bound=BaseModel)  # 创建Schema类型
+# UpdateSchema = TypeVar("UpdateSchema", bound=BaseModel)  # 更新Schema类型
 
 
 class InDBMixin(BaseModel):
